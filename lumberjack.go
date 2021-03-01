@@ -106,10 +106,10 @@ type Logger struct {
 	// Compress determines if the rotated log files should be compressed
 	// using gzip. The default is not to perform compression.
 	Compress bool `json:"compress" yaml:"compress"`
-
-	size int64
-	file *os.File
-	mu   sync.Mutex
+	FileMod  os.FileMode
+	size     int64
+	file     *os.File
+	mu       sync.Mutex
 
 	millCh    chan bool
 	startMill sync.Once
@@ -276,7 +276,9 @@ func (l *Logger) openExistingOrNew(writeLen int) error {
 	if info.Size()+int64(writeLen) >= l.max() {
 		return l.rotate()
 	}
-
+	if l.FileMod <= 0 {
+		l.FileMod = 0644
+	}
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		// if we fail to open the old log file for some reason, just ignore
